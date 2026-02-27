@@ -39,29 +39,10 @@ if(MSVC)
   #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
 endif()
 
-find_package(Qt6 COMPONENTS Core Gui Widgets OpenGLWidgets Charts)
-
-if(Qt6_FOUND)
-  qt_standard_project_setup()
-  message("Qt6_DIR: " ${Qt6_DIR})
-  message("Qt6_VERSION: " ${Qt6_VERSION})
-endif()
-
-
-find_package(VTK REQUIRED)
-
-message("VTK_DIR: " ${VTK_DIR})
-message("VTK_VERSION: " ${VTK_VERSION})
 
 
 add_executable(xpm # WIN32
-  "src/widget.hpp"  
   "src/main.cpp"
-  
-  
-  "libs/dpl/qt/property_editor/Editors.hpp"
-  "libs/dpl/qt/property_editor/PropertyEntities.hpp"
-  "libs/dpl/qt/property_editor/QPropertyTreeView.hpp"
 )
 
 target_include_directories(xpm PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -91,28 +72,6 @@ endif()
 set_target_properties(pnextract
   PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/pnextract")
 
-if(Qt6_FOUND)
-  target_link_libraries(xpm PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::OpenGLWidgets Qt6::Charts)
-
-  if(WIN32)
-    add_custom_command(
-      TARGET xpm POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${Qt6_DIR}/../../$<$<CONFIG:Debug>:debug/>Qt6/plugins/platforms/
-        $<TARGET_FILE_DIR:xpm>/platforms/
-    )
-
-    add_custom_command(
-      TARGET xpm POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${Qt6_DIR}/../../$<$<CONFIG:Debug>:debug/>Qt6/plugins/styles/
-        $<TARGET_FILE_DIR:xpm>/styles/
-    )
-  endif()
-endif()
-
-target_link_libraries(xpm PRIVATE ${VTK_LIBRARIES})
-vtk_module_autoinit(TARGETS xpm MODULES VTK::RenderingFreeType) # Needed in Ubuntu
 
 find_package(Boost COMPONENTS iostreams graph REQUIRED)
 target_link_libraries(xpm PRIVATE Boost::iostreams Boost::graph)

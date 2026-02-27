@@ -22,10 +22,7 @@
  *
  */
 
-#include "widget.hpp"
 
-#include <QWidget>
-#include <QApplication>
 
 #include <argh.h>
 

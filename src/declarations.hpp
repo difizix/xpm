@@ -28,7 +28,6 @@
 #include <dpl/defs_fmt.hpp>
 #include <dpl/defs_json.hpp>
 #include <dpl/hypre/core.hpp>
-#include <dpl/qt/parse.hpp>
 
 #include <boost/math/tools/roots.hpp>
 #include <boost/pending/disjoint_sets.hpp>
@@ -590,7 +589,6 @@ namespace xpm
   {
     double poro;
     double perm;
-    QColor color;
 
     std::array<dpl::curve2d, 2> pc_to_sw;
     std::array<std::array<dpl::curve2d, 2>, 2> kr;
@@ -720,8 +718,6 @@ namespace xpm
         darcy.count = phase_t(s);                          // NOLINT(clang-diagnostic-implicit-int-conversion)
         darcy.info.resize(darcy.count);    
 
-        auto mult = 255./(s + 1);                          // NOLINT(cppcoreguidelines-narrowing-conversions, clang-diagnostic-implicit-int-float-conversion)
-
         using namespace dpl;
         using namespace std;
 
@@ -768,11 +764,6 @@ namespace xpm
               dpl::parse(rel_perm.at(0), info.kr[c][0]);
               dpl::parse(rel_perm.at(1), info.kr[c][1]);
             }
-
-          {
-            info.color = QColor::fromHsl(*i*mult, 175, 122);  // NOLINT(cppcoreguidelines-narrowing-conversions)
-            qt::try_parse(j, info.color);
-          }
 
           ++i;
         }
