@@ -21,9 +21,11 @@
  *
  */
 
-#pragma once
-
 #include <boost/intrusive/avltree_algorithms.hpp>
+#include <boost/intrusive/bstree_algorithms.hpp>
+#include <boost/intrusive/detail/assert.hpp>
+
+#include <cmath>
 
 namespace dpl::graph
 {
@@ -165,6 +167,105 @@ namespace dpl::graph
       return base::subtree_size(p);
     }
 
+    static void left_right_balancing(node_ptr a, node_ptr b, node_ptr c) {
+      const balance c_balance = nt::get_balance(c);
+      const balance zero_balance = nt::zero();
+      const balance posi_balance = nt::positive();
+      const balance nega_balance = nt::negative();
+      nt::set_balance(c, zero_balance);
+      if(c_balance == nega_balance){
+         nt::set_balance(a, posi_balance);
+         nt::set_balance(b, zero_balance);
+      }
+      else if(c_balance == zero_balance){
+         nt::set_balance(a, zero_balance);
+         nt::set_balance(b, zero_balance);
+      }
+      else if(c_balance == posi_balance){
+         nt::set_balance(a, zero_balance);
+         nt::set_balance(b, nega_balance);
+      }
+    }
+
+    static node_ptr avl_rotate_left_right(const node_ptr a, const node_ptr a_oldleft, node_ptr hdr) {
+      const node_ptr c = nt::get_right(a_oldleft);
+      base::rotate_left_no_parent_fix(a_oldleft, c);
+      base::rotate_right(a, c, nt::get_parent(a), hdr);
+      left_right_balancing(a, a_oldleft, c);
+      return c;
+    }
+
+    static node_ptr avl_rotate_right_left(const node_ptr a, const node_ptr a_oldright, node_ptr hdr) {
+      const node_ptr c = nt::get_left(a_oldright);
+      base::rotate_right_no_parent_fix(a_oldright, c);
+      base::rotate_left(a, c, nt::get_parent(a), hdr);
+      left_right_balancing(a_oldright, a, c);
+      return c;
+    }
+
+    static void avl_rotate_left(node_ptr x, node_ptr x_oldright, node_ptr hdr) {
+      base::rotate_left(x, x_oldright, nt::get_parent(x), hdr);
+      if (nt::get_balance(x_oldright) == nt::positive()) {
+         nt::set_balance(x, nt::zero());
+         nt::set_balance(x_oldright, nt::zero());
+      }
+      else {
+         nt::set_balance(x, nt::positive());
+         nt::set_balance(x_oldright, nt::negative());
+      }
+    }
+
+    static void avl_rotate_right(node_ptr x, node_ptr x_oldleft, node_ptr hdr) {
+      base::rotate_right(x, x_oldleft, nt::get_parent(x), hdr);
+      if (nt::get_balance(x_oldleft) == nt::negative()) {
+         nt::set_balance(x, nt::zero());
+         nt::set_balance(x_oldleft, nt::zero());
+      }
+      else {
+         nt::set_balance(x, nt::negative());
+         nt::set_balance(x_oldleft, nt::positive());
+      }
+    }
+
+    static bool rebalance_after_insertion_no_balance_assignment(node_ptr header, node_ptr x) {
+      bool absorbed = false;
+      for(node_ptr root = nt::get_parent(header); x != root; root = nt::get_parent(header)){
+         node_ptr const x_parent(nt::get_parent(x));
+         node_ptr const x_parent_left(nt::get_left(x_parent));
+         const balance x_parent_balance = nt::get_balance(x_parent);
+         const bool x_is_leftchild(x == x_parent_left);
+         if(x_parent_balance == nt::zero()){
+            nt::set_balance( x_parent, x_is_leftchild ? nt::negative() : nt::positive()  );
+            x = x_parent;
+         }
+         else if(x_parent_balance == nt::positive()){
+            if (x_is_leftchild)
+               nt::set_balance(x_parent, nt::zero());
+            else{
+               if (nt::get_balance(x) == nt::negative())
+                  avl_rotate_right_left(x_parent, x, header);
+               else
+                  avl_rotate_left(x_parent, x, header);
+            }
+            absorbed = true;
+            break;
+         }
+         else if(x_parent_balance == nt::negative()){
+            if (x_is_leftchild) {
+               if (nt::get_balance(x) == nt::positive())
+                  avl_rotate_left_right(x_parent, x, header);
+               else
+                  avl_rotate_right(x_parent, x, header);
+            }
+            else
+               nt::set_balance(x_parent, nt::zero());
+            absorbed = true;
+            break;
+         }
+      }
+      return absorbed;
+    }
+
     static void join_trees(node_ptr hdr_left, node_ptr x, node_ptr hdr_right) {
       node_ptr root_a = nt::get_parent(hdr_left);
       node_ptr root_b = nt::get_parent(hdr_right);
@@ -266,7 +367,7 @@ namespace dpl::graph
         base::swap_tree(hdr_left, hdr_right);
       }
 
-      base::rebalance_after_insertion_no_balance_assignment(hdr_left, x);
+      rebalance_after_insertion_no_balance_assignment(hdr_left, x);
     }
 
 
@@ -395,7 +496,7 @@ namespace dpl::graph
             nt::set_parent(hdr_right, r_node);
             nt::set_parent(r_node, hdr_right);
 
-            if (base::rebalance_after_insertion_no_balance_assignment(hdr_right, x))
+            if (rebalance_after_insertion_no_balance_assignment(hdr_right, x))
               right_tail_height = r_height;
             else
               right_tail_height = r_height + 1;
@@ -486,7 +587,7 @@ namespace dpl::graph
             nt::set_parent(hdr_right, l_node);
             nt::set_parent(l_node, hdr_right);
 
-            if (base::rebalance_after_insertion_no_balance_assignment(hdr_right, x))
+            if (rebalance_after_insertion_no_balance_assignment(hdr_right, x))
               left_tail_height = l_height;
             else
               left_tail_height = l_height + 1;

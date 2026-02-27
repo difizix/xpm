@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.3.0)
-project (pnextract_project)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+project(pnextract_project)
 
 add_executable(pnextract # WIN32
   "src/pnm/pnextract/nextract.cpp"  
@@ -14,3 +14,5 @@ target_compile_features(pnextract PRIVATE cxx_std_17)
 
 target_include_directories(pnextract PRIVATE "src/include")
 target_include_directories(pnextract PRIVATE "src/libvoxel")
+set_target_properties(pnextract PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")

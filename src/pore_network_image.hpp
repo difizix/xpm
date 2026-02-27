@@ -173,8 +173,7 @@ namespace xpm
     //   // shapeFactor[inlet_total_idx] = -9999.0;
     //   // shapeFactor[outlet_total_idx] = -9999.0;
     // }
-    
-    
+
     macro_t parse_statoil_text_idx(std::integral auto idx) const {
       if (idx == -1)
         return node_count();
@@ -241,7 +240,7 @@ namespace xpm
 
     
     
-    auto node_count() const {
+    macro_t node_count() const {
       return macro_t(node_.size());
     }
 
@@ -701,12 +700,15 @@ namespace xpm
 
       double total_porosity = 0.0;
 
-      for (auto p : phases)
-        if (count[p])
-          if (p == cfg.void_v)                                       // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions, clang-diagnostic-implicit-int-float-conversion)
-            total_porosity += count[p];                                   
-          else if (p != cfg.solid_v)                                 // NOLINT(clang-diagnostic-dangling-else)
+      for (auto p : phases) {
+        if (count[p]) {
+          if (p == cfg.void_v) {                                       // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions, clang-diagnostic-implicit-int-float-conversion)
+            total_porosity += count[p];
+          } else if (p != cfg.solid_v) {                                 // NOLINT(clang-diagnostic-dangling-else)
             total_porosity += count[p]*cfg.darcy.info[cfg.darcy.narrow[p]].poro;
+          }
+        }
+      }
 
       total_porosity /= *size_;                                      // NOLINTEND(cppcoreguidelines-narrowing-conversions, clang-diagnostic-implicit-int-float-conversion)
 
@@ -892,11 +894,13 @@ namespace xpm
       std::vector<bool> inlet(gross_total_size);
       std::vector<bool> outlet(gross_total_size);
 
-      for (auto [l, r] : pn_->throat_.span(attrib::adj))
-        if (r == pn_->inlet()) // macro-inlet
+      for (auto [l, r] : pn_->throat_.span(attrib::adj)) {
+        if (r == pn_->inlet()) { // macro-inlet
           inlet[ds.find_set(*total(l))] = true;
-        else if (r == pn_->outlet()) // macro-outlet
+        } else if (r == pn_->outlet()) { // macro-outlet
           outlet[ds.find_set(*total(l))] = true;
+        }
+      }
 
       {
         idx3d_t ijk;
@@ -1131,11 +1135,15 @@ namespace xpm
       auto throat_to_de = std::make_unique<dc_graph::edge_t[]>(pn_->throat_count());
 
       for (auto [l, r] : pn_->throat_.span(attrib::adj))
-        if (connected(l))
-          if (pn_->inner_node(r)) // macro-macro
+        if (connected(l)) {
+          if (pn_->inner_node(r)) { // macro-macro
             gen.reserve(l, r);
-          else if (pn_->outlet() == r) // macro-outlet
+          } else if (pn_->inlet() == r) { // macro-inlet
+            // TODO: noop?
+          } else if (pn_->outlet() == r) { // macro-outlet
             gen.reserve(l, connected_count_);
+          }
+        }
 
       {
         idx3d_t ijk;
@@ -1164,19 +1172,21 @@ namespace xpm
       gen.allocate();
 
       for (std::size_t i{0}; i < pn_->throat_count(); ++i)
-        if (auto [l, r] = attrib::adj(pn_, i); connected(l))
+        if (auto [l, r] = attrib::adj(pn_, i); connected(l)) {
           if (pn_->inner_node(r)) { // macro-macro 
             auto [lr, rl] = gen.set(l, r);
             de_to_throat[lr] = i;
             de_to_throat[rl] = i;
             throat_to_de[i] = lr;
-          }
-          else if (pn_->outlet() == r) { // macro-outlet
+          } else if (pn_->inlet() == r) { // macro-inlet
+            // TODO: noop?
+          } else if (pn_->outlet() == r) { // macro-outlet
             auto [lr, rl] = gen.set(l, connected_count_);
             de_to_throat[lr] = i;
             de_to_throat[rl] = i;
             throat_to_de[i] = lr;
           }
+        }
 
       {
         idx3d_t ijk;

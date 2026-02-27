@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <boost/intrusive/avltree_algorithms.hpp>
+
 namespace dpl::graph
 {
   template <typename Algo>

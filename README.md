@@ -4,6 +4,8 @@ xpm is a software for predicting flow properties of the multi-scale pore space.
 
 xpm uses [pnextract](https://github.com/ImperialCollegeLondon/pnextract) to acquire a network model from an image.
 
+This version has Qt and VTK removed.
+
 ## Publications
 
 - [Poster](https://doi.org/10.6084/m9.figshare.25902862.v1) presented at Interpore 2024, Qingdao, China

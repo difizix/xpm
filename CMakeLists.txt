@@ -23,6 +23,9 @@
 # 
 
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
 
 project(xpm_project)
 
@@ -69,15 +72,11 @@ else()
   #add_compile_options("-w")
 endif()
 
-set_target_properties(pnextract
-  PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/pnextract")
-
 
 find_package(Boost COMPONENTS iostreams graph REQUIRED)
 target_link_libraries(xpm PRIVATE Boost::iostreams Boost::graph)
 
-find_package(argh CONFIG REQUIRED)
-target_link_libraries(xpm PRIVATE argh)
+target_include_directories(xpm PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libs/argh")
 
 find_package(fmt CONFIG REQUIRED)
 target_link_libraries(xpm PRIVATE fmt::fmt)
@@ -95,11 +94,22 @@ endif()
 if(TRUE)
   set(HYPRE_ENABLE_HYPRE_BLAS OFF)
   set(HYPRE_ENABLE_HYPRE_LAPACK OFF)
-  set(HYPRE_ENABLE_MIXEDINT OFF)
-  set(HYPRE_ENABLE_BIGINT OFF)
-  set(HYPRE_ENABLE_SINGLE OFF)
-  set(HYPRE_PRINT_ERRORS OFF)
-  add_subdirectory("libs/hypre/src")
+  set(HYPRE_ENABLE_MIXEDINT OFF CACHE BOOL "" FORCE)
+  set(HYPRE_ENABLE_BIGINT OFF CACHE BOOL "" FORCE)
+  set(HYPRE_ENABLE_SINGLE OFF CACHE BOOL "" FORCE)
+  set(HYPRE_PRINT_ERRORS OFF CACHE BOOL "" FORCE)
+  set(HYPRE_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+  
+  include(FetchContent)
+  FetchContent_Declare(
+    hypre
+    GIT_REPOSITORY https://github.com/hypre-space/hypre.git
+    GIT_TAG        v2.31.0
+    SOURCE_SUBDIR  src
+  )
+  FetchContent_MakeAvailable(hypre)
+
+  target_include_directories(xpm PRIVATE "${hypre_SOURCE_DIR}/src")
   target_link_libraries(xpm PRIVATE HYPRE)
 else()
   find_package(HYPRE REQUIRED)
@@ -107,10 +117,15 @@ else()
 endif()
 
 
-if(NOT EXISTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config.json)
-  file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+if(CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+else()
+  set(OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
+if(NOT EXISTS ${OUTPUT_DIR}/config.json)
+  file(MAKE_DIRECTORY ${OUTPUT_DIR})
   file(COPY_FILE
     "${CMAKE_CURRENT_SOURCE_DIR}/files/config.json"
-    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config.json")
+    "${OUTPUT_DIR}/config.json")
 endif()

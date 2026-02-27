@@ -629,8 +629,8 @@ namespace xpm {
 
           set<double> pcs;
           for (const auto& d : darcy_span)
-            for (auto pc : views::keys(d.pc_to_sw[1]))
-              pcs.insert(pc);
+            for (const auto& p : d.pc_to_sw[1])
+              pcs.insert(p.x());
 
           for (auto pc : pcs | std::views::reverse) {
             if (pc <= topmost_pc)
@@ -694,7 +694,7 @@ namespace xpm {
             set_entry(v, nullptr, g_);
           }
           else {
-            if (edge_t vw = throat_to_de_[i]; !is_null_entry(vw, g_))
+            if (edge_t vw = throat_to_de_[i]; !is_null_entry(vw, g_)) {
               if (is_tree_edge(vw, g_)) {
                 if (!context_.tree_edge_split_and_reconnect(vw)) {
                   et_ptr hdr = et_algo::get_header(get_entry(target(vw, g_), g_));
@@ -706,6 +706,7 @@ namespace xpm {
               }
               else  // NOLINT(clang-diagnostic-dangling-else)
                 context_.non_tree_edge_remove(vw);
+            }
           }
         }
       };
@@ -1099,8 +1100,8 @@ namespace xpm {
 
           set<double> pcs;
           for (const auto& d : darcy_span)
-            for (auto pc : views::keys(d.pc_to_sw[0]))
-              pcs.insert(pc);
+            for (const auto& p : d.pc_to_sw[0])
+              pcs.insert(p.x());
 
           for (auto pc : pcs) {
             if (pc <= last_pc)

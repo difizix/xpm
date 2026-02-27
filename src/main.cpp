@@ -24,7 +24,17 @@
 
 
 
-#include <argh.h>
+#include "../libs/argh/argh.h"
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <ranges>
+#include <nlohmann/json.hpp>
+#include <fmt/core.h>
+#include <nlohmann/json.hpp>
+
+#include "modeller.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -57,7 +67,6 @@ int main(int argc, char* argv[])
 
   using std::filesystem::path;
 
-  dpl::mpi::exec = argv[0];
   auto cmdl = argh::parser(argc, argv);
 
   path input;
@@ -67,7 +76,7 @@ int main(int argc, char* argv[])
     if (cmdl["G"]) { /*argc == 2 && !std::strcmp(argv[1], "-G")*/
       using json = nlohmann::json;
 
-      auto non_gui_exec = [&input](json& j) {
+      auto non_gui_exec = [&input, &argv](json& j) {
         xpm::modeller modeller;
     
         modeller.init(input, j);
@@ -75,9 +84,9 @@ int main(int argc, char* argv[])
         modeller.prepare();
         modeller.compute_pressure();
 
-        auto dir = path{dpl::mpi::exec}.replace_filename("results")/modeller.cfg().image.path.stem();
+        auto dir = std::filesystem::path{argv[0]}.replace_filename("results")/modeller.cfg().image.path.stem();
 
-        create_directories(dir);
+        std::filesystem::create_directories(dir);
 
         // TODO: deprecated
         {
@@ -108,48 +117,18 @@ int main(int argc, char* argv[])
         std::ofstream{dir/"phi_k_kr_pc.json"} << modeller.petrophysics_json().dump(2);
       };
 
-      if (auto root = json::parse(std::ifstream{input}, nullptr, true, true);
-        root.is_array())
-        std::ranges::for_each(root, non_gui_exec);
+      auto root = nlohmann::json::parse(std::ifstream{input}, nullptr, true, true);
+      if (root.is_array())
+        for (auto& item : root) non_gui_exec(item);
       else
         non_gui_exec(root);
     }
     else {
-      auto format = xpm::QVTKWidgetRef::defaultFormat();
-
-      #ifdef _WIN32
-        format.setProfile(QSurfaceFormat::CompatibilityProfile);
-      #else
-        format.setProfile(QSurfaceFormat::CoreProfile);
-      #endif
-
-      #if (VTK_MAJOR_VERSION == 8)
-        QSurfaceFormat::setDefaultFormat(format);
-      #elif (VTK_MAJOR_VERSION == 9)
-      #endif
-
-      QApplication app(argc, argv);
-
-      xpm::Widget widget;
-        
-      widget.Init(input);
-        
-      // Ui::MainWindow ui;
-      // ui.setupUi(&widget);
-
-      widget.resize(1400, 1000);
-      widget.show();
-
-      /*auto result = */QApplication::exec();
     }
   }
   catch (const xpm::config_exception& e) {
     fmt::print("\n(error) {}", e.what());
   }
-
-  #ifdef _WIN32
-    MPI_Finalize();
-  #endif
     
   return 0;
 }
