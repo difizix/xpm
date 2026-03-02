@@ -129,3 +129,5 @@ if(NOT EXISTS ${OUTPUT_DIR}/config.json)
     "${CMAKE_CURRENT_SOURCE_DIR}/files/config.json"
     "${OUTPUT_DIR}/config.json")
 endif()
+
+install(TARGETS xpm RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

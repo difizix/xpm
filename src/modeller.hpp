@@ -237,7 +237,7 @@ namespace xpm
         std::cout << "=========== pnextract begin ===========\n" << std::flush;
 
         std::system( // NOLINT(concurrency-mt-unsafe)
-          fmt::format("{} {}", fs::current_path()/"pnextract", filename).c_str());
+          fmt::format("pnextract {}", filename).c_str());
       
         create_directory(network_dir);
         for (fs::path file : files)

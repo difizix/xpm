@@ -16,3 +16,5 @@ target_include_directories(pnextract PRIVATE "src/include")
 target_include_directories(pnextract PRIVATE "src/libvoxel")
 set_target_properties(pnextract PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+install(TARGETS pnextract RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
