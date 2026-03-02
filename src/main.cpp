@@ -38,6 +38,9 @@
 
 int main(int argc, char* argv[])
 {
+  setenv("HWLOC_COMPONENTS", "-gl", 1);
+  dpl::mpi::exec = argv[0];
+
   // xpm::transform(
   //   R"(C:\dev\.temp\images\176-F8-15-97_1000x500x500_29p0um.raw)",
   //   {1000, 500, 500}, 0, 
@@ -84,7 +87,7 @@ int main(int argc, char* argv[])
         modeller.prepare();
         modeller.compute_pressure();
 
-        auto dir = std::filesystem::path{argv[0]}.replace_filename("results")/modeller.cfg().image.path.stem();
+        auto dir = std::filesystem::path{"results"}/modeller.cfg().image.path.stem();
 
         std::filesystem::create_directories(dir);
 
