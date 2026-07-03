@@ -31,6 +31,7 @@ voxelField<int> VElemsPlusThroats(const blockNetwork& mpn);
  voxelField<int> poreMaxBalls(const blockNetwork& mpn, int firstSlice, int lastSlice);
  voxelField<int> throatMaxBalls(const blockNetwork& mpn);
  voxelField<int> throatMaxBalls(const blockNetwork& mpn, int firstSlice, int lastSlice);
+ voxelField<int> throatCylinders(const blockNetwork& mpn);
 
 
 

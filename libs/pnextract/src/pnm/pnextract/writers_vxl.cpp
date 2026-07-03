@@ -68,25 +68,29 @@ voxelField<int> VThroats(const blockNetwork& mpn, int beginSlice, int endSlice) 
 
 voxelField<int> poreMaxBalls(const blockNetwork& mpn)  {
 	cout<< " write_poreMaxBalls   "<<endl;
-	voxelField<int> vfild(mpn.cg.nx, mpn.cg.ny, mpn.cg.nz,0);
+	voxelField<int> vfild(mpn.cg.nx, mpn.cg.ny, mpn.cg.nz, 0);
 
 	const medialSurface & rf = *mpn.srf;
 
-	for(const medialBall& vi: rf.ballSpace)  if(vi.level()==1)  {
-		int x= vi.fi,   y= vi.fj,   z= vi.fk;
-		float rlim = vi.R*vi.R;
+	for (size_t ip = mpn.firstPores; ip < mpn.poreIs.size(); ++ip) {
+		const poreNE* pr = mpn.poreIs[ip];
+		if (pr && pr->mb) {
+			int x = pr->mb->fi, y = pr->mb->fj, z = pr->mb->fk;
+			float rlim = pr->mb->R * pr->mb->R;
+			int ex = 1 * sqrt(rlim);
+			int elId = ip;
 
-		/// absorb 2R range balls
-		int ex, ey, ez;
-		ex = 1*sqrt(rlim);
-		for (int a=-ex; a<=ex; ++a)  {
-		  ey = sqrt(1*rlim-a*a);
-		  for (int b=-ey; b<=ey; ++b)  {
-			 ez = sqrt(1*rlim-a*a-b*b);
-			 for (int c=-ez; c<=ez; ++c)
-				  if (rf.isInside(x+a, y+b, z+c) && vfild(x+a,y+b,z+c) == 0)
-						vfild(x+a,y+b,z+c) = mpn.VElems(x,y,z);
-		  }
+			for (int a = -ex; a <= ex; ++a)  {
+				int ey = sqrt(rlim - a * a);
+				for (int b = -ey; b <= ey; ++b)  {
+					int ez = sqrt(rlim - a * a - b * b);
+					for (int c = -ez; c <= ez; ++c) {
+						if (rf.isInside(x + a, y + b, z + c) && vfild(x + a, y + b, z + c) == 0) {
+							vfild(x + a, y + b, z + c) = elId;
+						}
+					}
+				}
+			}
 		}
 	}
 	return vfild;
@@ -99,24 +103,26 @@ voxelField<int> poreMaxBalls(const blockNetwork& mpn, int firstSlice, int lastSl
 
 	const medialSurface & rf = *mpn.srf;
 
-	for(const medialBall& vi: rf.ballSpace)  if (vi.level()==1)  {
-		int x= vi.fi,   y= vi.fj,   z= vi.fk;
-		float rlim = vi.R*vi.R;
+	for (size_t ip = mpn.firstPores; ip < mpn.poreIs.size(); ++ip) {
+		const poreNE* pr = mpn.poreIs[ip];
+		if (pr && pr->mb) {
+			int x = pr->mb->fi, y = pr->mb->fj, z = pr->mb->fk;
+			float rlim = pr->mb->R * pr->mb->R;
+			int ex = 1 * sqrt(rlim);
+			int elId = ip;
 
-		/// absorb 2R range balls
-		int ex, ey, ez;
-		ex = 1*sqrt(rlim);
-		// if( (x + (1 + ex) < firstSlice) || (x - ( 1 + ex) > lastSlice) )  continue;
-		for (int a=-ex; a<=ex; ++a)  {
-		  ey = sqrt(1*rlim-a*a);
-		  for (int b=-ey; b<=ey; ++b)  {
-			 ez = sqrt(1*rlim-a*a-b*b);
-			 for (int c=-ez; c<=ez; ++c)
-				if (rf.isInside(x+a, y+b, z+c) && (z+c >= firstSlice && z+c < lastSlice) 
-						&& vfild(x+a,y+b,(z-firstSlice)+c) == 0)
-					vfild(x+a,y+b,z-firstSlice+c) = mpn.VElems(x,y,z);
-
-		  }
+			for (int a = -ex; a <= ex; ++a)  {
+				int ey = sqrt(rlim - a * a);
+				for (int b = -ey; b <= ey; ++b)  {
+					int ez = sqrt(rlim - a * a - b * b);
+					for (int c = -ez; c <= ez; ++c) {
+						if (rf.isInside(x + a, y + b, z + c) && (z + c >= firstSlice && z + c < lastSlice)
+								&& vfild(x + a, y + b, (z - firstSlice) + c) == 0) {
+							vfild(x + a, y + b, z - firstSlice + c) = elId;
+						}
+					}
+				}
+			}
 		}
 	}
 	return vfild;
@@ -190,6 +196,73 @@ voxelField<int> throatMaxBalls(const blockNetwork& mpn)  {
 		}
 	}
 	return vfild;
+}
+
+
+voxelField<int> throatCylinders(const blockNetwork& mpn)  {
+  /// Paints each throat's cylinder connecting the two adjacent pores, with radius same as throat radius.
+  /// Throat centre indices are guaranteed to have the correct index.
+
+  cout<< " WriteCylinders   "<<endl;
+  voxelField<int> vfild(mpn.cg.nx, mpn.cg.ny, mpn.cg.nz, 0);
+
+  for(const auto tr: mpn.throatIs) {
+
+    if (tr->e1 < mpn.nBP6 || tr->e2 < mpn.nBP6)
+      continue;  // skip boundary throats
+
+    double R = std::max(double(tr->mb22()->R), 0.8);
+
+    if (tr->e1 < 0 || tr->e1 >= mpn.poreIs.size() || tr->e2 < 0 || tr->e2 >= mpn.poreIs.size())
+      continue;
+
+    if (!mpn.poreIs[tr->e1]->mb || !mpn.poreIs[tr->e2]->mb)
+      continue;
+
+    dbl3 p1 = mpn.poreIs[tr->e1]->node();
+    dbl3 p2 = mpn.poreIs[tr->e2]->node();
+
+    double xmin = std::min(p1.x, p2.x) - R;
+    double xmax = std::max(p1.x, p2.x) + R;
+    double ymin = std::min(p1.y, p2.y) - R;
+    double ymax = std::max(p1.y, p2.y) + R;
+    double zmin = std::min(p1.z, p2.z) - R;
+    double zmax = std::max(p1.z, p2.z) + R;
+
+    int ix_min = std::max(0, int(xmin));
+    int ix_max = std::min(mpn.cg.nx - 1, int(xmax + 1.0));
+    int iy_min = std::max(0, int(ymin));
+    int iy_max = std::min(mpn.cg.ny - 1, int(ymax + 1.0));
+    int iz_min = std::max(0, int(zmin));
+    int iz_max = std::min(mpn.cg.nz - 1, int(zmax + 1.0));
+
+    dbl3 ab = p2 - p1;
+    double ab_sq = ab & ab;
+    const medialSurface & rf = *mpn.srf;
+    int tid = tr->tid;
+
+    for (int x = ix_min; x <= ix_max; ++x)  {
+      for (int y = iy_min; y <= iy_max; ++y)  {
+        for (int z = iz_min; z <= iz_max; ++z)  {
+          if (rf.isInside(x, y, z))  {
+            dbl3 v(x + 0.5, y + 0.5, z + 0.5);
+            dbl3 av = v - p1;
+            double t = (ab_sq > 1e-12) ? ((av & ab) / ab_sq) : 0.0;
+            if (t < 0.0) t = 0.0;
+            if (t > 1.0) t = 1.0;
+            dbl3 closest = p1 + ab * t; // on cylinder axis
+            double distSq = magSqr(v - closest);
+            if (distSq <= R*R + 0.5*R)  {
+              if (vfild(x, y, z) == 0)  {
+                vfild(x, y, z) = tid + 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return vfild;
 }
 ///. } Tom
 

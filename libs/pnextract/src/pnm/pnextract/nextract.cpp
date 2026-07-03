@@ -92,6 +92,7 @@ int nextract(inputDataNE& cfg, bool verbose)  {
 				 cfg.add("write_poreMaxBalls","true");
 				 cfg.add("write_throatMaxBalls","true");
 				 cfg.add("write_throats","true");
+				 cfg.add("write_cylinders","true");
 			//cfg.add("write_poroats","true");   leads to seg fault
 			cfg.add("write_hierarchy","true");
 			cfg.add("write_throatHierarchy","true");
@@ -144,6 +145,8 @@ int nextract(inputDataNE& cfg, bool verbose)  {
 		if(cfg.giv("outputBlockSize", outputBlockSize)) cout << "OutputBlockSize:" << outputBlockSize << endl;
         if (!outputBlockSize) {
             if (cfg.getOr("write_throats", false))             VThroats(mpn).writeBin(cfg.name()+"_throats"+cfg.imgfrmt,0,cfg.nx,0,cfg.ny,0,cfg.nz);
+            if (cfg.getOr("write_cylinders", false) || cfg.getOr("write_throatCylinders", false) || cfg.getOr("WriteCylinders", false))
+                throatCylinders(mpn).writeBin(cfg.name()+"_throats_"+_s(cfg.nx)+"x"+_s(cfg.ny)+"x"+_s(cfg.nz)+"_"+cfg.imgfrmt,0,cfg.nx,0,cfg.ny,0,cfg.nz);
             if (cfg.getOr("write_poreMaxBalls", false))        poreMaxBalls(mpn).writeBin(cfg.name()+"_poreMBs"+cfg.imgfrmt,0,cfg.nx,0,cfg.ny,0,cfg.nz);
             if (cfg.getOr("write_throatMaxBalls", false))      throatMaxBalls(mpn).writeBin(cfg.name()+"_throatMBs"+cfg.imgfrmt,0,cfg.nx,0,cfg.ny,0,cfg.nz);
          } else {
