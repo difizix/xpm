@@ -121,7 +121,7 @@ int nextract(inputDataNE& cfg, bool verbose)  {
 	mpn.CreateVElem(0);
 
 															tim("write");
-			if (cfg.getOr("write_elements", true))	mpn.VElems.write(cfg.name()+"_VElems.mhd");
+			if (cfg.getOr("write_elements", true))	mpn.VElems.write(cfg.name()+"_VElems.raw"); // xpm supports/needs this in .raw format
 
 															tim("write");
 	mpn.createNewThroats(srf);

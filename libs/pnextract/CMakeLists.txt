@@ -12,6 +12,10 @@ add_executable(pnextract # WIN32
 
 target_compile_features(pnextract PRIVATE cxx_std_17)
 
+find_package(ZLIB REQUIRED)
+target_link_libraries(pnextract PRIVATE ZLIB::ZLIB)
+target_compile_definitions(pnextract PRIVATE ZLIB)
+
 target_include_directories(pnextract PRIVATE "src/include")
 target_include_directories(pnextract PRIVATE "src/libvoxel")
 set_target_properties(pnextract PROPERTIES
