@@ -130,4 +130,10 @@ if(NOT EXISTS ${OUTPUT_DIR}/config.json)
     "${OUTPUT_DIR}/config.json")
 endif()
 
-install(TARGETS xpm RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(SKBUILD)
+  # Built via `pip install` (scikit-build-core): place the executable where
+  # pip puts wheel scripts, i.e. the venv's bin/ (or Scripts/ on Windows).
+  install(TARGETS xpm RUNTIME DESTINATION "${SKBUILD_SCRIPTS_DIR}")
+else()
+  install(TARGETS xpm RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+endif()

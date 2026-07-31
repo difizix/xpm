@@ -1,0 +1,16 @@
+[build-system]
+requires = ["scikit-build-core>=0.11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "xpm"
+version = "0.0.1"
+description = "xpm (Extensive Pore Modelling) standalone executable"
+requires-python = ">=3.9"
+
+# No Python package here: this only builds and installs the xpm C++ executable
+# (as a wheel "script", i.e. into the venv's bin/ or Scripts/).
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+cmake.build-type = "Release"
+wheel.packages = []
